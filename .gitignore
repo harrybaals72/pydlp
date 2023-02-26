@@ -1,3 +1,6 @@
 *.json
 binaries/
 downloads/
+
+# docker run command:
+# docker run --rm --name pydlp -v ${PWD}/downloads:/home/downloads -v ${PWD}/files:/home/files --network=container:gluetun my-ytdl-api

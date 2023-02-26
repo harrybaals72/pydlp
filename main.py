@@ -6,8 +6,19 @@ import os
 import json
 import time
 import subprocess
+import sys
+import logging
+import pytz
 
 app = Flask(__name__)
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.INFO)
+
+# set the timezone to Los Angeles
+tz = pytz.timezone('America/Los_Angeles')
 
 # global variable to keep track of whether the search_files loop is running
 search_files_running = False
@@ -15,8 +26,10 @@ search_files_running = False
 @app.route('/add', methods=['POST'])
 def handle_post():
     data = request.json
-    now = datetime.datetime.now()
-    filename = "/home/files/" + now.strftime("%Y-%m-%d_%H-%M-%S") + ".json"
+    now = datetime.datetime.now(tz)
+    subprocess.call(['mkdir', '-p', '/home/files/'])
+    subprocess.call(['mkdir', '-p', '/home/files/notDone/'])
+    filename = "/home/files/notDone/" + now.strftime("%Y-%m-%d_%H-%M-%S") + ".json"
     with open(filename, 'w') as f:
         json.dump(data, f)
     return 'Data saved successfully!'
@@ -32,7 +45,7 @@ def execute_on_file(obj):
 def search_files():
     global search_files_running
     while search_files_running:
-        dir_path = '/home/files/'
+        dir_path = '/home/files/notDone/'
         json_files = [f for f in os.listdir(dir_path) if f.endswith('.json')]
         # search for json files every 5 seconds
         for i in range(1,6):
@@ -51,9 +64,11 @@ def search_files():
                 data = json.load(f)
                 for obj in data:
                     execute_on_file(obj)
-    
+            subprocess.call(['mkdir', '-p', '/home/files/done/'])
+            subprocess.call(['mv', '/home/files/notDone/' + first_json_file, '/home/files/done/'])
         else:
             print('No JSON files found in directory')
+        
 
 @app.route('/start_search_files')
 def start_search_files():
@@ -76,6 +91,12 @@ def stop_search_files():
         return jsonify({'status': 'stopped'})
     else:
         return jsonify({'status': 'already stopped'})
+    
+@app.route('/', methods=['POST'])
+def base():
+    print("hi")
+    app.logger.info('Hello, world!')
+    return 'gg'
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5353)
