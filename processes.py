@@ -6,6 +6,8 @@ import datetime
 import pytz
 import threading
 import os
+from logger import logger  
+# from routes import app, logInfo
 
 # set the timezone to Los Angeles
 tz = pytz.timezone('America/Los_Angeles')
@@ -29,7 +31,7 @@ def execute_on_file(obj):
     link = obj['link']
     destination = obj['destination']
     print("Link:", obj['link'], "\tDest:", obj['destination'])
-    subprocess.call(['yt-dlp', '-o', destination + "/%(title)s.%(ext)s", link])
+    subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
 
 def search_files():
     global search_files_running
@@ -38,12 +40,12 @@ def search_files():
         json_files = [f for f in os.listdir(dir_path) if f.endswith('.json')]
         # search for json files every 5 seconds
         for i in range(1,6):
-            print("Count-A", i)
+            logger.info("Count-A {}".format(i))
             time.sleep(1)
 
         response = requests.get('https://api.ipify.org')
         ip_address = response.text
-        print(ip_address)
+        logger.info(ip_address)
         print("\nnew loop\n")
 
         if json_files:
