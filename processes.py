@@ -1,21 +1,12 @@
-from flask import Flask, request, jsonify
-import requests
+import subprocess
+import requests 
+import json 
+import time
 import datetime
+import pytz
 import threading
 import os
-import json
-import time
-import subprocess
-import sys
-import logging
-import pytz
-
-app = Flask(__name__)
-
-handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-app.logger.addHandler(handler)
-app.logger.setLevel(logging.INFO)
+from routes import logInfo
 
 # set the timezone to Los Angeles
 tz = pytz.timezone('America/Los_Angeles')
@@ -23,16 +14,15 @@ tz = pytz.timezone('America/Los_Angeles')
 # global variable to keep track of whether the search_files loop is running
 search_files_running = False
 
-@app.route('/add', methods=['POST'])
-def handle_post():
-    data = request.json
+def add_links(data):
     now = datetime.datetime.now(tz)
     subprocess.call(['mkdir', '-p', '/home/files/'])
     subprocess.call(['mkdir', '-p', '/home/files/notDone/'])
     filename = "/home/files/notDone/" + now.strftime("%Y-%m-%d_%H-%M-%S") + ".json"
     with open(filename, 'w') as f:
         json.dump(data, f)
-    return 'Data saved successfully!'
+    
+    return 'Success'
 
 def execute_on_file(obj):
     # function to execute on the file
@@ -54,7 +44,7 @@ def search_files():
 
         response = requests.get('https://api.ipify.org')
         ip_address = response.text
-        print(ip_address)
+        logInfo(ip_address)
         print("\nnew loop\n")
 
         if json_files:
@@ -68,35 +58,23 @@ def search_files():
             subprocess.call(['mv', '/home/files/notDone/' + first_json_file, '/home/files/done/'])
         else:
             print('No JSON files found in directory')
-        
 
-@app.route('/start_search_files')
-def start_search_files():
+def start_loop():
     global search_files_running
     if not search_files_running:
         # start the search_files loop if it's not already running
         search_files_running = True
         thread = threading.Thread(target=search_files)
         thread.start()
-        return jsonify({'status': 'started'})
+        return 'started'
     else:
-        return jsonify({'status': 'already running'})
-
-@app.route('/stop_search_files')
-def stop_search_files():
+        return 'already running'
+    
+def stop_loop():
     global search_files_running
     if search_files_running:
         # stop the search_files loop if it's running
         search_files_running = False
-        return jsonify({'status': 'stopped'})
+        return 'stopped'
     else:
-        return jsonify({'status': 'already stopped'})
-    
-@app.route('/', methods=['POST'])
-def base():
-    print("hi")
-    app.logger.info('Hello, world!')
-    return 'gg'
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5353)
+        return 'already stopped'
