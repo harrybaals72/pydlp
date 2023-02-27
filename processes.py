@@ -30,35 +30,76 @@ def execute_on_file(obj):
     # replace with your own implementation
     link = obj['link']
     destination = obj['destination']
-    print("Link:", obj['link'], "\tDest:", obj['destination'])
-    subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
+    logger.info("Operating on: Link: {} \tDest: {}".format(obj['link'], obj['destination']))
+    # process = subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
+
+    command = f"yt-dlp -N 20 -o {destination}/'%(title)s.%(ext)s' {link}"
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
+    done = False
+    for line in iter(process.stdout.readline, b''):
+        line = line.decode('utf-8')
+        logger.info(line)
+        if '[download] 100% of' in line:
+            logger.info('Download finish confirmed')
+            done = True
+        else:
+            print(line.strip())
+        time.sleep(1)
+
+    returncode = process.poll()
+    process.wait()
+    logger.info('Process finished with code {}'.format(returncode))
+    return done
 
 def search_files():
     global search_files_running
     while search_files_running:
         dir_path = '/home/files/notDone/'
         json_files = [f for f in os.listdir(dir_path) if f.endswith('.json')]
+
+        response = requests.get('https://api.ipify.org')
+        ip_address = response.text
+        logger.info(ip_address)
+
+        if json_files:
+            json_files.sort()
+            first_json_file = json_files[0]
+            subprocess.call(['mkdir', '-p', '/home/files/done/'])
+            subprocess.call(['touch', '/home/files/done/' + first_json_file])
+
+            with open(os.path.join(dir_path, first_json_file), 'r') as f:
+                data = json.load(f)
+                for obj in data:
+                    if (execute_on_file(obj)):
+                        write_to_done_file(obj, first_json_file)
+            
+            subprocess.call(['mv', '/home/files/notDone/' + first_json_file, '/home/files/done/'])
+        else:
+            print('No JSON files found in directory')
+        
         # search for json files every 5 seconds
         for i in range(1,6):
             logger.info("Count-A {}".format(i))
             time.sleep(1)
 
-        response = requests.get('https://api.ipify.org')
-        ip_address = response.text
-        logger.info(ip_address)
-        print("\nnew loop\n")
+def write_to_done_file(obj, first_json_file):
+    logger.info("Beggining write")
+    try:
+        with open(os.path.join('/home/files/done/', first_json_file), 'r') as f:
+            existingData = json.load(f)
+            logger.info("Read file with contents {}".format(existingData))
+    except json.decoder.JSONDecodeError:
+        logger.info("Exception, existingData set to []")
+        existingData = []
 
-        if json_files:
-            json_files.sort()
-            first_json_file = json_files[0]
-            with open(os.path.join(dir_path, first_json_file), 'r') as f:
-                data = json.load(f)
-                for obj in data:
-                    execute_on_file(obj)
-            subprocess.call(['mkdir', '-p', '/home/files/done/'])
-            subprocess.call(['mv', '/home/files/notDone/' + first_json_file, '/home/files/done/'])
-        else:
-            print('No JSON files found in directory')
+    logger.info("Appending object")
+    existingData.append(obj)
+
+    with open('/home/files/done/' + first_json_file, 'w') as d:
+        json.dump(existingData, d)
+        logger.info("Dumped")
+    
 
 def start_loop():
     global search_files_running
