@@ -6,7 +6,6 @@ import datetime
 import pytz
 import threading
 import os
-from routes import logInfo
 
 # set the timezone to Los Angeles
 tz = pytz.timezone('America/Los_Angeles')
@@ -44,7 +43,7 @@ def search_files():
 
         response = requests.get('https://api.ipify.org')
         ip_address = response.text
-        logInfo(ip_address)
+        print(ip_address)
         print("\nnew loop\n")
 
         if json_files:
