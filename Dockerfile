@@ -10,9 +10,8 @@ COPY requirements.txt /app/
 RUN pip install -r /app/requirements.txt
 
 # COPY app.py .
-COPY routes.py /app/
-COPY processes.py /app/
+COPY *.py /app/
 COPY binaries/ /usr/local/bin/
 
 # CMD [ "python", "app.py" ]
-CMD [ "python", "/app/routes.py" ]
+CMD [ "python", "/app/main.py" ]
