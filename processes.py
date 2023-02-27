@@ -29,7 +29,7 @@ def execute_on_file(obj):
     link = obj['link']
     destination = obj['destination']
     print("Link:", obj['link'], "\tDest:", obj['destination'])
-    subprocess.call(['yt-dlp', '-o', destination + "/%(title)s.%(ext)s", link])
+    subprocess.call(['yt-dlp', '-N', '20', '-o', destination + "/%(title)s.%(ext)s", link])
 
 def search_files():
     global search_files_running
