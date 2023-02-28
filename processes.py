@@ -39,16 +39,37 @@ def execute_on_file(obj):
 
     done = False
 
-    for line in iter(process.stdout.readline, b''):
-        line = line.decode('utf-8')
-        logger.info(line)
+    # for line in iter(process.stdout.readline, b''):
+    #     line = line.decode('utf-8')
+    #     logger.info(line)
 
-        if '[download] 100% of' in line:
-            logger.info('Download finish confirmed')
-            done = True
-        else:
-            print(line.strip())
-        time.sleep(1)
+    #     if '[download] 100% of' in line:
+    #         logger.info('Download finish confirmed')
+    #         done = True
+    #     else:
+    #         print(line.strip())
+    #     # time.sleep(1)
+    
+    # for line in iter(process.stderr.readline, b''):
+    #     line = line.decode('utf-8')
+    #     logger.error(line)
+    #     print(line.strip())
+
+    while True:
+        output = process.stdout.readline() + process.stderr.readline()
+        if output == b'' and process.poll() is not None:
+            break
+        if output:
+            output_str = output.decode('utf-8').strip()  
+            if '[download] 100% of' in output_str:
+                logger.info('Download finish confirmed')
+                done = True
+            logger.info(output_str)
+
+    if process.returncode == 0:
+        print("Download finished successfully!")
+    else:
+        print(f"Download failed with exit code {process.returncode}")   
 
     returncode = process.poll()
     process.wait()
@@ -68,16 +89,33 @@ def search_files():
         if json_files:
             json_files.sort()
             first_json_file = json_files[0]
-            subprocess.call(['mkdir', '-p', '/home/files/done/'])
-            subprocess.call(['touch', '/home/files/done/' + first_json_file])
+            doneDir = '/home/files/done/'
+            doneFilePath = doneDir + first_json_file
 
+            # Create file that tracks what downloads are done
+            subprocess.call(['mkdir', '-p', doneDir])
+            subprocess.call(['touch', doneFilePath])
+
+            try:
+                with open(doneFilePath, 'r') as f:
+                    existingData = json.load(f)
+                    logger.info("Read done file first time with contents {}".format(existingData))
+            except json.decoder.JSONDecodeError:
+                logger.info("Exception, existingData set to []")
+                existingData = []
+
+            # Read data from notDone file
             with open(os.path.join(dir_path, first_json_file), 'r') as f:
-                data = json.load(f)
+                addData = json.load(f)
 
-            for obj in data:
-                if (execute_on_file(obj)):
-                    write_to_done_file(obj, os.path.join('/home/files/done/', first_json_file))
-                    remove_obj_from_file(obj, os.path.join(dir_path, first_json_file))
+            for obj in addData:
+                if obj in existingData:
+                    logger.info("{} already done".format(obj))
+                else:
+                    status = execute_on_file(obj)
+                    if (status):
+                        write_to_done_file(obj, os.path.join('/home/files/done/', first_json_file))
+                        # remove_obj_from_file(obj, os.path.join(dir_path, first_json_file))
 
             
             subprocess.call(['mv', '/home/files/notDone/' + first_json_file, '/home/files/done/'])
@@ -113,8 +151,9 @@ def remove_obj_from_file(obj, file):
         data = json.load(f)
     
     if obj in data:
-        logger.info("{} obj found in data".format(obj))
+        logger.info("{} obj found in data, removing".format(obj))
         data.remove(obj)
+        logger.info("New data: {}".format(data))
     
     with open('/home/files/done/modifed.json', 'w') as f:
         logger.info("Dumping")
