@@ -14,6 +14,7 @@ app = Flask(__name__)
 
 @app.route('/add', methods=['POST'])
 def handle_post():
+    logger.info("Received /add request")
     data = request.json
     status = add_links(data)
     return status
@@ -28,7 +29,7 @@ def stop_search_files():
     status = stop_loop()
     return jsonify({'status': status})
     
-@app.route('/', methods=['POST'])
+@app.route('/', methods=['GET'])
 def base():
     print("hi")
     print('Hello, world!', file=sys.stdout)

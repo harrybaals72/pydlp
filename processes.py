@@ -16,12 +16,13 @@ tz = pytz.timezone('America/Los_Angeles')
 search_files_running = False
 
 def add_links(data):
+    logger.info("Data received: {}".format(data))
     now = datetime.datetime.now(tz)
     subprocess.call(['mkdir', '-p', '/home/files/'])
     subprocess.call(['mkdir', '-p', '/home/files/notDone/'])
     filename = "/home/files/notDone/" + now.strftime("%Y-%m-%d_%H-%M-%S") + ".json"
     with open(filename, 'w') as f:
-        json.dump(data, f)
+        json.dump(data, f, indent=2)
     
     return 'Success'
 
@@ -29,17 +30,19 @@ def execute_on_file(obj):
     # function to execute on the file
     # replace with your own implementation
     link = obj['link']
-    destination = obj['destination']
-    logger.info("Operating on: Link: {} \tDest: {}".format(obj['link'], obj['destination']))
+    destination = "/home/downloads/" + obj['destination']
+    logger.info("Operating on: Link: {} \tDest: {}".format(link, destination))
     # process = subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
 
     command = f"yt-dlp -N 20 -o {destination}/'%(title)s.%(ext)s' {link}"
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
     done = False
+
     for line in iter(process.stdout.readline, b''):
         line = line.decode('utf-8')
         logger.info(line)
+
         if '[download] 100% of' in line:
             logger.info('Download finish confirmed')
             done = True
@@ -70,9 +73,12 @@ def search_files():
 
             with open(os.path.join(dir_path, first_json_file), 'r') as f:
                 data = json.load(f)
-                for obj in data:
-                    if (execute_on_file(obj)):
-                        write_to_done_file(obj, first_json_file)
+
+            for obj in data:
+                if (execute_on_file(obj)):
+                    write_to_done_file(obj, os.path.join('/home/files/done/', first_json_file))
+                    remove_obj_from_file(obj, os.path.join(dir_path, first_json_file))
+
             
             subprocess.call(['mv', '/home/files/notDone/' + first_json_file, '/home/files/done/'])
         else:
@@ -83,22 +89,36 @@ def search_files():
             logger.info("Count-A {}".format(i))
             time.sleep(1)
 
-def write_to_done_file(obj, first_json_file):
+def write_to_done_file(obj, file):
     logger.info("Beggining write")
     try:
-        with open(os.path.join('/home/files/done/', first_json_file), 'r') as f:
+        with open(file, 'r') as f:
             existingData = json.load(f)
             logger.info("Read file with contents {}".format(existingData))
     except json.decoder.JSONDecodeError:
         logger.info("Exception, existingData set to []")
         existingData = []
 
-    logger.info("Appending object")
-    existingData.append(obj)
+    if obj not in existingData:
+        logger.info("Appending object")
+        existingData.append(obj)
 
-    with open('/home/files/done/' + first_json_file, 'w') as d:
-        json.dump(existingData, d)
+    with open(file, 'w') as d:
+        json.dump(existingData, d, indent=2)
         logger.info("Dumped")
+
+def remove_obj_from_file(obj, file):
+    logger.info("Reading original file")
+    with open(file, 'r') as f:
+        data = json.load(f)
+    
+    if obj in data:
+        logger.info("{} obj found in data".format(obj))
+        data.remove(obj)
+    
+    with open('/home/files/done/modifed.json', 'w') as f:
+        logger.info("Dumping")
+        json.dump(data, f, indent=2)
     
 
 def start_loop():
