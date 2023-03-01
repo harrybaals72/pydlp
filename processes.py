@@ -34,7 +34,7 @@ def execute_on_file(obj):
     logger.info("Operating on: Link: {} \tDest: {}".format(link, destination))
     # process = subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
 
-    command = f"yt-dlp -N 20 -o {destination}/'%(title)s.%(ext)s' {link}"
+    command = f"yt-dlp -N 20 -P {destination} -P 'temp:/downloads/tmp' -o '%(title)s.%(ext)s' {link}"
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
     done = False
