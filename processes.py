@@ -32,12 +32,13 @@ def execute_on_file(obj):
     link = obj['link']
     destination = "/home/downloads/" + obj['destination']
     logger.info("Operating on: Link: {} \tDest: {}".format(link, destination))
-    # process = subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
+    process = subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
 
     command = f"yt-dlp -N 20 -o {destination}/'%(title)s.%(ext)s' {link}"
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    # process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
-    done = False
+    # done = False
+    done = True
 
     # for line in iter(process.stdout.readline, b''):
     #     line = line.decode('utf-8')
@@ -55,25 +56,28 @@ def execute_on_file(obj):
     #     logger.error(line)
     #     print(line.strip())
 
-    while True:
-        output = process.stdout.readline() + process.stderr.readline()
-        if output == b'' and process.poll() is not None:
-            break
-        if output:
-            output_str = output.decode('utf-8').strip()  
-            if '[download] 100% of' in output_str:
-                logger.info('Download finish confirmed')
-                done = True
-            logger.info(output_str)
 
-    if process.returncode == 0:
-        print("Download finished successfully!")
-    else:
-        print(f"Download failed with exit code {process.returncode}")   
+    ####################################################
 
-    returncode = process.poll()
-    process.wait()
-    logger.info('Process finished with code {}'.format(returncode))
+    # while True:
+    #     output = process.stdout.readline() + process.stderr.readline()
+    #     if output == b'' and process.poll() is not None:
+    #         break
+    #     if output:
+    #         output_str = output.decode('utf-8').strip()  
+    #         if '[download] 100% of' in output_str:
+    #             logger.info('Download finish confirmed')
+    #             done = True
+    #         logger.info(output_str)
+
+    # if process.returncode == 0:
+    #     print("Download finished successfully!")
+    # else:
+    #     print(f"Download failed with exit code {process.returncode}")   
+
+    # returncode = process.poll()
+    # process.wait()
+    # logger.info('Process finished with code {}'.format(returncode))
     return done
 
 def search_files():
@@ -87,7 +91,7 @@ def search_files():
         logger.info(ip_address)
 
         if json_files:
-            json_files.sort()
+            json_files.sort(reverse=True)
             first_json_file = json_files[0]
             doneDir = '/home/files/done/'
             doneFilePath = doneDir + first_json_file
