@@ -30,31 +30,31 @@ def execute_on_file(obj):
     # function to execute on the file
     # replace with your own implementation
     link = obj['link']
-    destination = "/home/downloads/" + obj['destination']
+    destination = "/downloads/" + obj['destination']
     logger.info("Operating on: Link: {} \tDest: {}".format(link, destination))
-    process = subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
+    # process = subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
 
     command = f"yt-dlp -N 20 -o {destination}/'%(title)s.%(ext)s' {link}"
-    # process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
-    # done = False
-    done = True
+    done = False
+    # done = True
 
-    # for line in iter(process.stdout.readline, b''):
-    #     line = line.decode('utf-8')
-    #     logger.info(line)
+    for line in iter(process.stdout.readline, b''):
+        line = line.decode('utf-8')
+        logger.info(line)
 
-    #     if '[download] 100% of' in line:
-    #         logger.info('Download finish confirmed')
-    #         done = True
-    #     else:
-    #         print(line.strip())
-    #     # time.sleep(1)
+        if '[download] 100% of' in line:
+            logger.info('Download finish confirmed')
+            done = True
+        else:
+            print(line.strip())
+        # time.sleep(1)
     
-    # for line in iter(process.stderr.readline, b''):
-    #     line = line.decode('utf-8')
-    #     logger.error(line)
-    #     print(line.strip())
+    for line in iter(process.stderr.readline, b''):
+        line = line.decode('utf-8')
+        logger.error(line)
+        print(line.strip())
 
 
     ####################################################
