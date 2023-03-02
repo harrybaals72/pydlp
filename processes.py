@@ -38,7 +38,6 @@ def execute_on_file(obj):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
     done = False
-    # done = True
 
     for line in iter(process.stdout.readline, b''):
         line = line.decode('utf-8')
@@ -56,28 +55,6 @@ def execute_on_file(obj):
         logger.error(line)
         print(line.strip())
 
-
-    ####################################################
-
-    # while True:
-    #     output = process.stdout.readline() + process.stderr.readline()
-    #     if output == b'' and process.poll() is not None:
-    #         break
-    #     if output:
-    #         output_str = output.decode('utf-8').strip()  
-    #         if '[download] 100% of' in output_str:
-    #             logger.info('Download finish confirmed')
-    #             done = True
-    #         logger.info(output_str)
-
-    # if process.returncode == 0:
-    #     print("Download finished successfully!")
-    # else:
-    #     print(f"Download failed with exit code {process.returncode}")   
-
-    # returncode = process.poll()
-    # process.wait()
-    # logger.info('Process finished with code {}'.format(returncode))
     return done
 
 def search_files():
