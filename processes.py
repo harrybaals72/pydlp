@@ -30,7 +30,8 @@ def execute_on_file(obj):
     # function to execute on the file
     # replace with your own implementation
     link = obj['link']
-    destination = "/downloads/" + obj['destination']
+    destination = ("/downloads/" + obj['destination']).replace(" ", "-")
+    
     logger.info("Operating on: Link: {} \tDest: {}".format(link, destination))
     # process = subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
 
@@ -44,6 +45,9 @@ def execute_on_file(obj):
         logger.info(line)
 
         if '[download] 100% of' in line:
+            logger.info('Download finish confirmed')
+            done = True
+        elif 'has already been downloaded' in line:
             logger.info('Download finish confirmed')
             done = True
         else:
@@ -68,38 +72,47 @@ def search_files():
         logger.info(ip_address)
 
         if json_files:
-            json_files.sort(reverse=True)
-            first_json_file = json_files[0]
-            doneDir = '/home/files/done/'
-            doneFilePath = doneDir + first_json_file
+            json_files.sort()
+            for file in json_files:
+                first_json_file = file
+                # first_json_file = json_files[0]
+                doneDir = '/home/files/done/'
+                doneFilePath = doneDir + first_json_file
 
-            # Create file that tracks what downloads are done
-            subprocess.call(['mkdir', '-p', doneDir])
-            subprocess.call(['touch', doneFilePath])
+                # Create file that tracks what downloads are done
+                subprocess.call(['mkdir', '-p', doneDir])
+                subprocess.call(['touch', doneFilePath])
 
-            try:
-                with open(doneFilePath, 'r') as f:
-                    existingData = json.load(f)
-                    logger.info("Read done file first time with contents {}".format(existingData))
-            except json.decoder.JSONDecodeError:
-                logger.info("Exception, existingData set to []")
-                existingData = []
+                try:
+                    with open(doneFilePath, 'r') as f:
+                        existingData = json.load(f)
+                        logger.info("Read done file first time with contents {}".format(existingData))
+                except json.decoder.JSONDecodeError:
+                    logger.info("Exception, existingData set to []")
+                    existingData = []
 
-            # Read data from notDone file
-            with open(os.path.join(dir_path, first_json_file), 'r') as f:
-                addData = json.load(f)
+                # Read data from notDone file
+                with open(os.path.join(dir_path, first_json_file), 'r') as f:
+                    addData = json.load(f)
 
-            for obj in addData:
-                if obj in existingData:
-                    logger.info("{} already done".format(obj))
-                else:
-                    status = execute_on_file(obj)
-                    if (status):
-                        write_to_done_file(obj, os.path.join('/home/files/done/', first_json_file))
-                        # remove_obj_from_file(obj, os.path.join(dir_path, first_json_file))
-
-            
-            subprocess.call(['mv', '/home/files/notDone/' + first_json_file, '/home/files/done/'])
+                success = True
+                counter = 1
+                total = len(addData)
+                for obj in addData:
+                    logger.info("On item {}/{}".format(counter, total))
+                    counter += 1
+                    if obj in existingData:
+                        logger.info("{} already done".format(obj))
+                    else:
+                        status = execute_on_file(obj)
+                        if (status):
+                            write_to_done_file(obj, os.path.join('/home/files/done/', first_json_file))
+                        else:
+                            success = False
+                            # remove_obj_from_file(obj, os.path.join(dir_path, first_json_file))
+                
+                if (success):
+                    subprocess.call(['mv', '/home/files/notDone/' + first_json_file, '/home/files/done/'])
         else:
             print('No JSON files found in directory')
         
