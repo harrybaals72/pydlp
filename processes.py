@@ -68,9 +68,9 @@ def search_files():
         dir_path = '/home/files/notDone/'
         json_files = [f for f in os.listdir(dir_path) if f.endswith('.json')]
 
-        response = requests.get('https://api.ipify.org')
-        ip_address = response.text
-        logger.info(ip_address)
+        # response = requests.get('https://api.ipify.org')
+        # ip_address = response.text
+        # logger.info(ip_address)
 
         if json_files:
             json_files.sort()
@@ -119,7 +119,7 @@ def search_files():
         
         # search for json files every 5 seconds
         for i in range(1,6):
-            logger.info("Count-A {}".format(i))
+            # logger.info("Count-A {}".format(i))
             time.sleep(1)
 
 def write_to_done_file(obj, file):
