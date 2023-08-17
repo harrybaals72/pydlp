@@ -30,15 +30,17 @@ def execute_on_file(obj):
     # function to execute on the file
     # replace with your own implementation
     link = obj['link']
-    destination = "/downloads/" + obj['destination']
+    destination = ("/downloads/" + obj['destination']).replace(" ", "-")
+    
     logger.info("Operating on: Link: {} \tDest: {}".format(link, destination))
     # process = subprocess.call(['yt-dlp', '-N', '20','-o', destination + "/%(title)s.%(ext)s", link])
 
-    command = f"yt-dlp -N 20 -o {destination}/'%(title)s.%(ext)s' {link}"
+    # command = f"yt-dlp -N 20 -P {destination} -P 'temp:/tmp' -o '%(title)s.%(ext)s' {link}"
+    command = f"yt-dlp -N 20 --cookies /downloads/notready_/MV/cookies.txt -P {destination} -P 'temp:/tmp' -o '%(title)s.%(ext)s' {link}"
+
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
     done = False
-    # done = True
 
     for line in iter(process.stdout.readline, b''):
         line = line.decode('utf-8')
@@ -47,37 +49,19 @@ def execute_on_file(obj):
         if '[download] 100% of' in line:
             logger.info('Download finish confirmed')
             done = True
+        elif 'has already been downloaded' in line:
+            logger.info('File already downloaded')
+            done = True
         else:
             print(line.strip())
         # time.sleep(1)
     
     for line in iter(process.stderr.readline, b''):
         line = line.decode('utf-8')
-        logger.error(line)
+        if "The download speed shown is only of one thread." not in line:
+            logger.error(line)
         print(line.strip())
 
-
-    ####################################################
-
-    # while True:
-    #     output = process.stdout.readline() + process.stderr.readline()
-    #     if output == b'' and process.poll() is not None:
-    #         break
-    #     if output:
-    #         output_str = output.decode('utf-8').strip()  
-    #         if '[download] 100% of' in output_str:
-    #             logger.info('Download finish confirmed')
-    #             done = True
-    #         logger.info(output_str)
-
-    # if process.returncode == 0:
-    #     print("Download finished successfully!")
-    # else:
-    #     print(f"Download failed with exit code {process.returncode}")   
-
-    # returncode = process.poll()
-    # process.wait()
-    # logger.info('Process finished with code {}'.format(returncode))
     return done
 
 def search_files():
@@ -86,49 +70,58 @@ def search_files():
         dir_path = '/home/files/notDone/'
         json_files = [f for f in os.listdir(dir_path) if f.endswith('.json')]
 
-        response = requests.get('https://api.ipify.org')
-        ip_address = response.text
-        logger.info(ip_address)
+        # response = requests.get('https://api.ipify.org')
+        # ip_address = response.text
+        # logger.info(ip_address)
 
         if json_files:
-            json_files.sort(reverse=True)
-            first_json_file = json_files[0]
-            doneDir = '/home/files/done/'
-            doneFilePath = doneDir + first_json_file
+            json_files.sort()
+            for file in json_files:
+                first_json_file = file
+                # first_json_file = json_files[0]
+                doneDir = '/home/files/done/'
+                doneFilePath = doneDir + first_json_file
 
-            # Create file that tracks what downloads are done
-            subprocess.call(['mkdir', '-p', doneDir])
-            subprocess.call(['touch', doneFilePath])
+                # Create file that tracks what downloads are done
+                subprocess.call(['mkdir', '-p', doneDir])
+                subprocess.call(['touch', doneFilePath])
 
-            try:
-                with open(doneFilePath, 'r') as f:
-                    existingData = json.load(f)
-                    logger.info("Read done file first time with contents {}".format(existingData))
-            except json.decoder.JSONDecodeError:
-                logger.info("Exception, existingData set to []")
-                existingData = []
+                try:
+                    with open(doneFilePath, 'r') as f:
+                        existingData = json.load(f)
+                        logger.info("Read done file first time with contents {}".format(existingData))
+                except json.decoder.JSONDecodeError:
+                    logger.info("Exception, existingData set to []")
+                    existingData = []
 
-            # Read data from notDone file
-            with open(os.path.join(dir_path, first_json_file), 'r') as f:
-                addData = json.load(f)
+                # Read data from notDone file
+                with open(os.path.join(dir_path, first_json_file), 'r') as f:
+                    addData = json.load(f)
 
-            for obj in addData:
-                if obj in existingData:
-                    logger.info("{} already done".format(obj))
-                else:
-                    status = execute_on_file(obj)
-                    if (status):
-                        write_to_done_file(obj, os.path.join('/home/files/done/', first_json_file))
-                        # remove_obj_from_file(obj, os.path.join(dir_path, first_json_file))
-
-            
-            subprocess.call(['mv', '/home/files/notDone/' + first_json_file, '/home/files/done/'])
+                success = True
+                counter = 1
+                total = len(addData)
+                for obj in addData:
+                    logger.info("On item {}/{}".format(counter, total))
+                    counter += 1
+                    if obj in existingData:
+                        logger.info("{} already done".format(obj))
+                    else:
+                        status = execute_on_file(obj)
+                        if (status):
+                            write_to_done_file(obj, os.path.join('/home/files/done/', first_json_file))
+                        else:
+                            success = False
+                            # remove_obj_from_file(obj, os.path.join(dir_path, first_json_file))
+                
+                if (success):
+                    subprocess.call(['mv', '/home/files/notDone/' + first_json_file, '/home/files/done/'])
         else:
             print('No JSON files found in directory')
         
         # search for json files every 5 seconds
         for i in range(1,6):
-            logger.info("Count-A {}".format(i))
+            # logger.info("Count-A {}".format(i))
             time.sleep(1)
 
 def write_to_done_file(obj, file):
