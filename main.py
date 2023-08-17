@@ -7,6 +7,8 @@ def main():
     if port is None:
         print("Environment variable not set.")
         sys.exit(1)
+    else:
+        print("PORT set to:", port)
 
     app.run(debug=True, host="0.0.0.0", port=port)
 

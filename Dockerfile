@@ -13,4 +13,4 @@ RUN pip install -r /app/requirements.txt
 COPY *.py /app/
 COPY binaries/ /usr/local/bin/
 
-CMD [ "python", "/app/main.py" ]
+ENTRYPOINT [ "python", "/app/main.py" ]
