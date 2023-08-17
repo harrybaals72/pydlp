@@ -1,5 +1,14 @@
+import os
+import sys
 from routes import app
-from processes import start_loop
+
+def main():
+    port = os.environ.get('PORT')
+    if port is None:
+        print("Environment variable not set.")
+        sys.exit(1)
+
+    app.run(debug=True, host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5353)
+    main()
